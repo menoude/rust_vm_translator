@@ -46,16 +46,15 @@ impl Pushable for VariableSeg {
     fn push_asm_command(&self, index: u16) -> String {
         format!(
             "\
-             @{}\n\
-             D=A\n\
-             @{}\n\
-             A=D+M\n\
-             D=M\n\
-             @SP\n\
-             M=M+1\n\
-             A=M-1\n\
-             M=D\n\
-             ",
+@{}
+D=A
+@{}
+A=D+M
+D=M
+@SP
+M=M+1
+A=M-1
+M=D",
             index,
             self.to_str()
         )
@@ -66,13 +65,12 @@ impl FixedSeg {
     pub fn push_asm_command(&self, index: u16) -> String {
         format!(
             "\
-             @{}\n\
-             D=M\n\
-             @SP\n\
-             M=M+1\n\
-             A=M-1\n\
-             M=D\n\
-             ",
+@{}
+D=M
+@SP
+M=M+1
+A=M-1
+M=D",
             index + self.to_mem_index()
         )
     }
