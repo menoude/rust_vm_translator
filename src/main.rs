@@ -1,8 +1,3 @@
-// pub mod code_writer;
-// pub mod constants;
-// pub mod parser;
-// pub mod utils;
-
 use std::process;
 use vm_translator::translate;
 

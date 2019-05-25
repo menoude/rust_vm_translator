@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-// pub mod code_writer;
+pub mod code_writer;
+// pub mod constants;
 pub mod error;
 pub mod parser;
 
@@ -18,10 +19,7 @@ fn get_file_data(original_path: PathBuf) -> Result<FileData> {
 	let destination_path: PathBuf = original_path.with_extension("asm");
 	let destination_name = destination_path
 		.file_name()
-		.ok_or(error::TranslateError::new(
-			error::TranslateErrorKind::WrongFilePath,
-			"No file name",
-		))?
+		.ok_or(error::TranslateError::WrongFilePath)?
 		.to_os_string()
 		.into_string()
 		.unwrap();
@@ -52,10 +50,15 @@ fn get_data(path: &str) -> Result<Vec<FileData>> {
 pub fn translate(raw_path: &str) -> Result<()> {
 	let files_data = get_data(raw_path)?;
 	for file in files_data {
-		// let code_writer = code_writer::CodeWriter::new();
+		let code_writer = code_writer::CodeWriter::new(file);
 		let content = parser::read_content(file)?;
 		let mut parser = parser::Parser::new(&content)?;
-		while parser.advance() {}
+		while parser.advance() {
+			match parser.command_type() {
+				// arithmetic =>,
+				// push or pop =>
+			}
+		}
 	}
 	Ok(())
 }

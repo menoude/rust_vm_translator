@@ -45,19 +45,13 @@ impl<'a> Parser<'a> {
 		self.current_line
 			.get(1)
 			.map(|&token| token)
-			.ok_or(TranslateError::new(
-				TranslateErrorKind::WrongIndex,
-				"Wrong index",
-			))
+			.ok_or(TranslateError::WrongIndex)
 	}
 
 	pub fn arg_2(&mut self) -> Result<&str> {
 		self.current_line
 			.get(2)
 			.map(|&token| token)
-			.ok_or(TranslateError::new(
-				TranslateErrorKind::WrongIndex,
-				"Wrong index",
-			))
+			.ok_or(TranslateError::WrongIndex)
 	}
 }
