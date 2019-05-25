@@ -1,11 +1,11 @@
-use super::FileData;
-use std::error::Error;
+use super::*;
+use crate::error::*;
 use std::fs::File;
 use std::io::Read;
 use std::iter::Peekable;
 use std::str::Lines;
 
-pub fn read_content(file_data: FileData) -> Result<String, Box<dyn Error>> {
+pub fn read_content(file_data: FileData) -> Result<String> {
 	let mut file = File::open(file_data.original_path)?;
 	let mut content = String::new();
 	file.read_to_string(&mut content)?;
@@ -15,35 +15,49 @@ pub fn read_content(file_data: FileData) -> Result<String, Box<dyn Error>> {
 #[derive(Debug)]
 pub struct Parser<'a> {
 	lines: Peekable<Lines<'a>>,
-	current_line: String,
+	pub current_line: Vec<&'a str>,
 }
 
 impl<'a> Parser<'a> {
-	pub fn new(content: &'a str) -> Result<Self, Box<dyn Error>> {
+	pub fn new(content: &'a str) -> Result<Self> {
 		let parser = Parser {
 			lines: content.lines().peekable(),
-			current_line: String::new(),
+			current_line: vec![&content],
 		};
 		Ok(parser)
 	}
 
-	pub fn has_more_commands(&mut self) -> bool {
-		self.lines.peek() != None
+	pub fn advance(&mut self) -> bool {
+		while let Some(line) = self.lines.next() {
+			if !line.is_empty() {
+				self.current_line = line.split_whitespace().collect();
+				return true;
+			}
+		}
+		false
 	}
 
-	pub fn advance(&mut self) {
-		self.current_line = self.lines.next().unwrap().to_owned();
+	pub fn command_type(&mut self) -> &str {
+		self.current_line[0]
 	}
 
-	pub fn command_type(&self) -> &str {
-		&self.current_line
+	pub fn arg_1(&mut self) -> Result<&str> {
+		self.current_line
+			.get(1)
+			.map(|&token| token)
+			.ok_or(TranslateError::new(
+				TranslateErrorKind::WrongIndex,
+				"Wrong index",
+			))
 	}
 
-	pub fn arg_1(&self) -> &str {
-		&self.current_line
-	}
-
-	pub fn arg_2(&self) -> &str {
-		&self.current_line
+	pub fn arg_2(&mut self) -> Result<&str> {
+		self.current_line
+			.get(2)
+			.map(|&token| token)
+			.ok_or(TranslateError::new(
+				TranslateErrorKind::WrongIndex,
+				"Wrong index",
+			))
 	}
 }

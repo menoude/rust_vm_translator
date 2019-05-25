@@ -17,7 +17,7 @@ fn main() {
         );
         process::exit(1);
     }
-    translate(args[1].to_owned()).unwrap_or_else(|e| {
+    translate(&args[1]).unwrap_or_else(|e| {
         println!("An error occured: {}", e);
         process::exit(1);
     });
