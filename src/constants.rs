@@ -1,34 +1,19 @@
-// enum segment
+use std::convert::TryFrom;
 
-trait Pushable {
-    fn push_asm_command(&self, index: u16) -> String;
-}
-
-#[derive(Copy, Clone)]
-pub enum Segment {
-    Local,
-    Argument,
-    This,
-    That,
-    Temp,
-    Pointer,
-    Static,
+#[derive(Debug)]
+pub enum ArithmeticCommand {
+    Add,
+    Sub,
+    Neg,
+    r#Eq,
+    Gt,
+    Lt,
+    And,
+    Or,
+    Not,
 }
 
 impl Segment {
-    fn new(segment: &str) -> Option<Self> {
-        match segment {
-            "local" => Some(Segment::Local),
-            "argument" => Some(Segment::Argument),
-            "this" => Some(Segment::This),
-            "that" => Some(Segment::That),
-            "temp" => Some(Segment::Temp),
-            "pointer" => Some(Segment::Pointer),
-            "static" => Some(Segment::Static),
-            _ => None,
-        }
-    }
-
     fn to_str(&self, name: &str, index: u16) -> String {
         match self {
             Segment::Local => format!("LCL"),
