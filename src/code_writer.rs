@@ -2,10 +2,10 @@ use crate::*;
 
 use std::convert::TryFrom;
 use std::fs::File;
-use std::ops::Deref;
-use std::str::FromStr;
 use std::io::Write;
 
+use std::ops::Deref;
+use std::str::FromStr;
 pub struct CodeWriter {
     name: String,
     buf: BufWriter<File>,
@@ -25,7 +25,7 @@ impl CodeWriter {
 
     pub fn write_file_name(&mut self) -> Result<()> {
         let comment_line = format!("// {}\n", self.name);
-        self.buf.write(comment_line.as_bytes())?;
+        self.buf.write_all(comment_line.as_bytes())?;
         Ok(())
     }
 
