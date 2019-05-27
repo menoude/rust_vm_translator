@@ -23,7 +23,7 @@ impl TryFrom<&str> for Segment {
             "temp" => Ok(Segment::Temp),
             "pointer" => Ok(Segment::Pointer),
             "static" => Ok(Segment::Static),
-            s => Err(TranslateError::IncorrectCommand(s.to_owned())),
+            _ => Err(TranslateError::Error),
         }
     }
 }

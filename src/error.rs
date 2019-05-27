@@ -1,33 +1,39 @@
 use crate::*;
 use std::fmt;
-use std::io;
+use std::fmt::Display;
 use std::num;
 use std::path::PathBuf;
 use std::string::ToString;
+use std::io;
 
 #[derive(Debug)]
 pub enum TranslateError {
+	Error,
 	Io(io::Error),
 	Parsing(num::ParseIntError),
-	WrongIndex(u16),
+	WrongIndex(u16, u16),
 	WrongFilePath(PathBuf),
-	IncorrectCommand(String),
+	NoVmFile(PathBuf),
+	IncorrectCommand(String, u16),
 }
 
 impl Display for TranslateError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let message = match &self {
+			TranslateError::Error => "".to_owned(),
 			TranslateError::Io(e) => e.to_string(),
 			TranslateError::Parsing(e) => e.to_string(),
-			TranslateError::WrongIndex(index) => {
-				format!("Try to access index {} which is invalid", index)
+			TranslateError::WrongIndex(index, line) => format!(
+				"Try to access index {} which is invalid, line {}",
+				index, line
+			),
+			TranslateError::WrongFilePath(path) => format!("Wrong file path '{}'", path.display()),
+			TranslateError::NoVmFile(path) => format!("No vm file in directory {}", path.display()),
+			TranslateError::IncorrectCommand(command, line) => {
+				format!("Incorrect command '{}' at line {}", command, line)
 			}
-			TranslateError::WrongFilePath(path) => {
-				format!("Wrong file path '{}'", path.to_str().unwrap_or(""))
-			}
-			TranslateError::IncorrectCommand(command) => format!("Incorrect command '{}'", command),
 		};
-		write!(f, "Error: {}", message)
+		write!(f, "{}", message)
 	}
 }
 

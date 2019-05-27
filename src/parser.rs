@@ -16,6 +16,7 @@ pub fn read_content(file_data: &FileData) -> Result<String> {
 pub struct Parser<'a> {
 	lines: Peekable<Lines<'a>>,
 	pub current_line: Vec<&'a str>,
+	line_index: u16,
 }
 
 impl<'a> Parser<'a> {
@@ -23,18 +24,24 @@ impl<'a> Parser<'a> {
 		let parser = Parser {
 			lines: content.lines().peekable(),
 			current_line: vec![&content],
+			line_index: 0,
 		};
 		Ok(parser)
 	}
 
 	pub fn advance(&mut self) -> bool {
 		while let Some(line) = self.lines.next() {
-			if !line.is_empty() {
+			self.line_index += 1;
+			if !line.is_empty() && !line.trim_start().starts_with("//") {
 				self.current_line = line.split_whitespace().collect();
 				return true;
 			}
 		}
 		false
+	}
+
+	pub fn get_line_index(&self) -> u16 {
+		self.line_index
 	}
 
 	pub fn command_type(&mut self) -> Result<CommandType> {
@@ -49,21 +56,24 @@ impl<'a> Parser<'a> {
 			"label" => Ok(CommandType::Label),
 			"function" => Ok(CommandType::Function),
 			"return" => Ok(CommandType::Return),
-			command => Err(TranslateError::IncorrectCommand(command.to_owned())),
+			command => Err(TranslateError::IncorrectCommand(
+				command.to_owned(),
+				self.line_index,
+			)),
 		}
 	}
 
 	pub fn arg_1(&self) -> Result<&str> {
 		self.current_line
 			.get(1)
-			.map(|&token| token)
-			.ok_or(TranslateError::WrongIndex(1))
+			.cloned()
+			.ok_or_else(|| TranslateError::WrongIndex(1, self.line_index))
 	}
 
 	pub fn arg_2(&self) -> Result<&str> {
 		self.current_line
 			.get(2)
-			.map(|&token| token)
-			.ok_or(TranslateError::WrongIndex(2))
+			.cloned()
+			.ok_or_else(|| TranslateError::WrongIndex(2, self.line_index))
 	}
 }

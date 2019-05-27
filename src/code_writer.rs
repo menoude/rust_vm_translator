@@ -10,17 +10,28 @@ pub struct CodeWriter {
     name: String,
     buf: BufWriter<File>,
     labels_count: u32,
+    original_line_nb: u16,
 }
 
 impl CodeWriter {
     pub fn new(file_data: &FileData) -> Result<CodeWriter> {
+        println!(
+            "Translate {} into {}",
+            file_data.original_path.display(),
+            file_data.destination_path.display()
+        );
         let f = File::create(file_data.destination_path.deref())?;
         let code_writer = CodeWriter {
             buf: BufWriter::new(f),
             labels_count: 0,
             name: file_data.destination_name.clone(),
+            original_line_nb: 0,
         };
         Ok(code_writer)
+    }
+
+    pub fn set_original_line_index(&mut self, index: u16) {
+        self.original_line_nb = index;
     }
 
     pub fn write_file_name(&mut self) -> Result<()> {
@@ -39,7 +50,12 @@ impl CodeWriter {
         arg_1: &str,
         arg_2: &str,
     ) -> Result<()> {
-        let segment = segments::Segment::try_from(arg_1)?;
+        let segment = segments::Segment::try_from(arg_1).or_else(|_| {
+            Err(TranslateError::IncorrectCommand(
+                arg_1.to_owned(),
+                self.original_line_nb,
+            ))
+        })?;
         let index = u16::from_str(arg_2)?;
         match command {
             CommandType::Push => self.write_push(segment, index)?,
