@@ -4,6 +4,7 @@ use std::convert::TryFrom;
 use std::fs::File;
 use std::io::Write;
 
+use std::convert::TryInto;
 use std::ops::Deref;
 use std::str::FromStr;
 pub struct CodeWriter {
@@ -57,104 +58,154 @@ impl CodeWriter {
             ))
         })?;
         let index = u16::from_str(arg_2)?;
-        match command {
-            CommandType::Push => self.write_push(segment, index)?,
-            CommandType::Pop => self.write_pop(segment, index)?,
-            _ => {}
-        }
+        let segment_type = segment.into_typed();
+
+        let instructions = match command {
+            CommandType::Push => self.push_instructions(segment_type, index)?,
+            CommandType::Pop => self.pop_instructions(segment_type, index)?,
+            _ => String::new(),
+        };
+        let comment = format!("// {} {} {}\n", command, arg_1, arg_2);
+        self.buf.write_all(comment.as_bytes())?;
+        self.buf.write_all(instructions.as_bytes())?;
         Ok(())
     }
 
-    pub fn write_push(&mut self, segment: Segment, index: u16) -> Result<()> {
-        println!("wrote a push");
-        Ok(())
-        // let asm_command: String;
-
-        // if let Some(label) = map_variable_segments(&segment) {
-        //     // asm_command = ;
-        // } else if let Some(mut address) = map_fixed_segments(&segment) {
-        //     address += index;
-        // // asm_command = ;
-        // } else if segment == "static" {
-        //     let label = format!("{}.{}", self.name, index);
-        //     asm_command = format!(
-        //         "\
-        //          @{}\n\
-        //          D=M\n\
-        //          @SP\n\
-        //          M=M+1\n\
-        //          A=M-1\n\
-        //          M=D\n\
-        //          ",
-        //         label
-        //     );
-        // } else {
-        //     asm_command = format!(
-        //         "\
-        //          @{}\n\
-        //          D=A\n\
-        //          @SP\n\
-        //          M=M+1\n\
-        //          A=M-1\n\
-        //          M=D\n\
-        //          ",
-        //         index
-        //     );
-        // }
-        // let text = format!("// push {} {}\n{}", segment, index, asm_command);
-        // self.buf.write(text.as_bytes()).unwrap();
+    pub fn push_instructions(&mut self, segment_type: SegmentType, index: u16) -> Result<String> {
+        let asm_command = match segment_type {
+            SegmentType::Variable(segment) => format!(
+                "@{}\n\
+                 D=A\n\
+                 @{}\n\
+                 A=D+M\n\
+                 D=M\n\
+                 @SP\n\
+                 M=M+1\n\
+                 A=M-1\n\
+                 M=D",
+                index,
+                segment.to_label()
+            ),
+            SegmentType::Fixed(segment) => format!(
+                "@{}\n\
+                 D=M\n\
+                 @SP\n\
+                 M=M+1\n\
+                 A=M-1\n\
+                 M=D\n",
+                segment.get_index(index)
+            ),
+            SegmentType::Static => format!(
+                "@{}.{}\n\
+                 D=M\n\
+                 @SP\n\
+                 M=M+1\n\
+                 A=M-1\n\
+                 M=D\n",
+                self.name, index
+            ),
+            SegmentType::Constant => format!(
+                "\
+                 @{}\n\
+                 D=A\n\
+                 @SP\n\
+                 M=M+1\n\
+                 A=M-1\n\
+                 M=D\n\
+                 ",
+                index
+            ),
+        };
+        Ok(asm_command)
     }
 
-    pub fn write_pop(&mut self, segment: Segment, index: u16) -> Result<()> {
-        println!("wrote a pop");
-        Ok(())
-        // let asm_command: String;
-
-        // if let Some(label) = map_variable_segments(&segment) {
-        //     asm_command = format!(
-        //         "\
-        //          @${}\n\
-        //          D=A\n\
-        //          @${}\n\
-        //          D=D+M\n\
-        //          @SP\n\
-        //          AM=M-1\n\
-        //          D=D+M\n\
-        //          A=D-M\n\
-        //          M=D-A\n\
-        //          ",
-        //         index, label
-        //     );
-        // } else if let Some(mut address) = map_fixed_segments(&segment) {
-        //     address += index;
-        //     asm_command = format!(
-        //         "\
-        //     @${}\n
-        //     D=A\n\
-        //     @SP\n\
-        //     AM=M-1\n\
-        //     D=D+M\n\
-        //     A=D-M\n\
-        //     M=D-A\n\
-        //     ",
-        //         address
-        //     );
-        // } else {
-        //     let label = format!("{}.{}", self.name, index);
-        //     asm_command = format!(
-        //         "\
-        //          @SP\n\
-        //          AM=M-1\n\
-        //          D=M\n\
-        //          @{}\n\
-        //          M=D\n\
-        //          ",
-        //         label
-        //     );
-        // }
-        // let text = format!("// pop {} {}\n{}", segment, index, asm_command);
-        // self.buf.write(text.as_bytes()).unwrap();
+    pub fn pop_instructions(&mut self, segment_type: SegmentType, index: u16) -> Result<String> {
+        let asm_command = match segment_type {
+            SegmentType::Variable(segment) => format!(
+                "\
+                 @${}\n\
+                 D=A\n\
+                 @${}\n\
+                 D=D+M\n\
+                 @SP\n\
+                 AM=M-1\n\
+                 D=D+M\n\
+                 A=D-M\n\
+                 M=D-A\n\
+                 ",
+                segment.to_label(),
+                index
+            ),
+            SegmentType::Fixed(segment) => format!(
+                "\
+                 @${}\n\
+                 D=A\n\
+                 @SP\n\
+                 AM=M-1\n\
+                 D=D+M\n\
+                 A=D-M\n\
+                 M=D-A\n\
+                 ",
+                segment.get_index(index)
+            ),
+            SegmentType::Static => format!(
+                "\
+                 @SP\n\
+                 AM=M-1\n\
+                 D=M\n\
+                 @{}.{}\n\
+                 M=D\n\
+                 ",
+                self.name, index
+            ),
+            _ => String::new(),
+        };
+        Ok(asm_command)
     }
+    // if let Some(label) = map_variable_segments(&segment) {
+    //     asm_command = format!(
+    //         "\
+    //          @${}\n\
+    //          D=A\n\
+    //          @${}\n\
+    //          D=D+M\n\
+    //          @SP\n\
+    //          AM=M-1\n\
+    //          D=D+M\n\
+    //          A=D-M\n\
+    //          M=D-A\n\
+    //          ",
+    //         index, label
+    //     );
+    // } else if let Some(mut address) = map_fixed_segments(&segment) {
+    //     address += index;
+    //     asm_command = format!(
+    //         "\
+    //     @${}\n
+    //     D=A\n\
+    //     @SP\n\
+    //     AM=M-1\n\
+    //     D=D+M\n\
+    //     A=D-M\n\
+    //     M=D-A\n\
+    //     ",
+    //         address
+    //     );
+    // } else {
+    //     let label = format!("{}.{}", self.name, index);
+    //     asm_command = format!(
+    //         "\
+    //          @SP\n\
+    //          AM=M-1\n\
+    //          D=M\n\
+    //          @{}\n\
+    //          M=D\n\
+    //          ",
+    //         label
+    //     );
+    // }
+    // let text = format!("// pop {} {}\n{}", segment, index, asm_command);
+    // self.buf.write(text.as_bytes()).unwrap();
 }
 
 // #[cfg(test)]
