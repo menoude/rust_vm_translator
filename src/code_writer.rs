@@ -162,50 +162,6 @@ impl CodeWriter {
         };
         Ok(asm_command)
     }
-    // if let Some(label) = map_variable_segments(&segment) {
-    //     asm_command = format!(
-    //         "\
-    //          @${}\n\
-    //          D=A\n\
-    //          @${}\n\
-    //          D=D+M\n\
-    //          @SP\n\
-    //          AM=M-1\n\
-    //          D=D+M\n\
-    //          A=D-M\n\
-    //          M=D-A\n\
-    //          ",
-    //         index, label
-    //     );
-    // } else if let Some(mut address) = map_fixed_segments(&segment) {
-    //     address += index;
-    //     asm_command = format!(
-    //         "\
-    //     @${}\n
-    //     D=A\n\
-    //     @SP\n\
-    //     AM=M-1\n\
-    //     D=D+M\n\
-    //     A=D-M\n\
-    //     M=D-A\n\
-    //     ",
-    //         address
-    //     );
-    // } else {
-    //     let label = format!("{}.{}", self.name, index);
-    //     asm_command = format!(
-    //         "\
-    //          @SP\n\
-    //          AM=M-1\n\
-    //          D=M\n\
-    //          @{}\n\
-    //          M=D\n\
-    //          ",
-    //         label
-    //     );
-    // }
-    // let text = format!("// pop {} {}\n{}", segment, index, asm_command);
-    // self.buf.write(text.as_bytes()).unwrap();
 }
 
 // #[cfg(test)]
