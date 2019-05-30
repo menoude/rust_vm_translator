@@ -43,7 +43,7 @@ impl CodeWriter {
 
     pub fn write_arithmetic(&mut self, command: String) -> Result<()> {
         let operation = Operation::try_from(command)?;
-        self.buf.write_all("arithmetic".as_bytes())?;
+        writeln!(self.buf, "Arithemtic operation...")?;
         Ok(())
     }
 
@@ -84,7 +84,7 @@ impl CodeWriter {
                  @SP\n\
                  M=M+1\n\
                  A=M-1\n\
-                 M=D",
+                 M=D\n",
                 index,
                 segment.to_label()
             ),
@@ -122,7 +122,7 @@ impl CodeWriter {
     pub fn pop_instructions(&mut self, segment_type: SegmentType, index: u16) -> Result<String> {
         let asm_command = match segment_type {
             SegmentType::Variable(segment) => format!(
-                "@${}\n\
+                "@{}\n\
                  D=A\n\
                  @${}\n\
                  D=D+M\n\
@@ -135,7 +135,7 @@ impl CodeWriter {
                 index
             ),
             SegmentType::Fixed(segment) => format!(
-                "@${}\n\
+                "@{}\n\
                  D=A\n\
                  @SP\n\
                  AM=M-1\n\
