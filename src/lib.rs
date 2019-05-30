@@ -4,19 +4,23 @@ use std::ffi::OsStr;
 use std::io::BufWriter;
 use std::path::PathBuf;
 
-
+pub mod parser;
 pub mod code_writer;
 // pub mod constants;
 pub mod commands;
 pub mod error;
-pub mod parser;
+pub mod operations;
 pub mod segments;
 
+
+use parser::*;
 use code_writer::*;
 use commands::*;
 use error::TranslateError;
-use parser::*;
+use operations::*;
 use segments::*;
+
+
 
 type Result<T> = std::result::Result<T, TranslateError>;
 
@@ -81,7 +85,7 @@ pub fn translate(raw_path: &str) -> Result<()> {
 			code_writer.set_original_line_index(parser.get_line_index());
 			let command_type = parser.command_type()?;
 			match command_type {
-				CommandType::Arithmetic(op) => code_writer.write_arithmetic(op),
+				CommandType::Arithmetic(op) => code_writer.write_arithmetic(op)?,
 				op @ CommandType::Push | op @ CommandType::Pop => {
 					code_writer.write_push_or_pop(op, parser.arg_1()?, parser.arg_2()?)?
 				}

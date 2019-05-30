@@ -41,8 +41,10 @@ impl CodeWriter {
         Ok(())
     }
 
-    pub fn write_arithmetic(&mut self, command: String) {
-        unimplemented!()
+    pub fn write_arithmetic(&mut self, command: String) -> Result<()> {
+        let operation = Operation::try_from(command)?;
+        self.buf.write_all("arithmetic".as_bytes())?;
+        Ok(())
     }
 
     pub fn write_push_or_pop(
@@ -105,14 +107,12 @@ impl CodeWriter {
                 self.name, index
             ),
             SegmentType::Constant => format!(
-                "\
-                 @{}\n\
+                "@{}\n\
                  D=A\n\
                  @SP\n\
                  M=M+1\n\
                  A=M-1\n\
-                 M=D\n\
-                 ",
+                 M=D\n",
                 index
             ),
         };
@@ -122,8 +122,7 @@ impl CodeWriter {
     pub fn pop_instructions(&mut self, segment_type: SegmentType, index: u16) -> Result<String> {
         let asm_command = match segment_type {
             SegmentType::Variable(segment) => format!(
-                "\
-                 @${}\n\
+                "@${}\n\
                  D=A\n\
                  @${}\n\
                  D=D+M\n\
@@ -131,31 +130,26 @@ impl CodeWriter {
                  AM=M-1\n\
                  D=D+M\n\
                  A=D-M\n\
-                 M=D-A\n\
-                 ",
+                 M=D-A\n",
                 segment.to_label(),
                 index
             ),
             SegmentType::Fixed(segment) => format!(
-                "\
-                 @${}\n\
+                "@${}\n\
                  D=A\n\
                  @SP\n\
                  AM=M-1\n\
                  D=D+M\n\
                  A=D-M\n\
-                 M=D-A\n\
-                 ",
+                 M=D-A\n",
                 segment.get_index(index)
             ),
             SegmentType::Static => format!(
-                "\
-                 @SP\n\
+                "@SP\n\
                  AM=M-1\n\
                  D=M\n\
                  @{}.{}\n\
-                 M=D\n\
-                 ",
+                 M=D\n",
                 self.name, index
             ),
             _ => String::new(),
