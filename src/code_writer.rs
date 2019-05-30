@@ -42,8 +42,15 @@ impl CodeWriter {
     }
 
     pub fn write_arithmetic(&mut self, command: String) -> Result<()> {
-        let operation = Operation::try_from(command)?;
-        writeln!(self.buf, "Arithemtic operation...")?;
+        let comment = format!("// {}\n", &command);
+        let operation = Operator::try_from(command)?;
+        let asm_command = match operation {
+            Operator::Binary(op) => op.to_asm(),
+            Operator::Unary(op) => op.to_asm(),
+            Operator::Compararison(op) => op.to_asm(),
+        };
+        self.buf.write_all(comment.as_bytes())?;
+        writeln!(self.buf, "{}", asm_command)?;
         Ok(())
     }
 
@@ -60,12 +67,11 @@ impl CodeWriter {
             ))
         })?;
         let index = u16::from_str(arg_2)?;
-        let segment_type = segment.into_typed();
 
         let instructions = match command {
-            CommandType::Push => self.push_instructions(segment_type, index)?,
-            CommandType::Pop => self.pop_instructions(segment_type, index)?,
-            _ => String::new(),
+            CommandType::Push => self.push_instructions(segment, index)?,
+            CommandType::Pop => self.pop_instructions(segment, index)?,
+            _ => panic!(),
         };
         let comment = format!("// {} {} {}\n", command, arg_1, arg_2);
         self.buf.write_all(comment.as_bytes())?;
@@ -73,31 +79,11 @@ impl CodeWriter {
         Ok(())
     }
 
-    pub fn push_instructions(&mut self, segment_type: SegmentType, index: u16) -> Result<String> {
-        let asm_command = match segment_type {
-            SegmentType::Variable(segment) => format!(
-                "@{}\n\
-                 D=A\n\
-                 @{}\n\
-                 A=D+M\n\
-                 D=M\n\
-                 @SP\n\
-                 M=M+1\n\
-                 A=M-1\n\
-                 M=D\n",
-                index,
-                segment.to_label()
-            ),
-            SegmentType::Fixed(segment) => format!(
-                "@{}\n\
-                 D=M\n\
-                 @SP\n\
-                 M=M+1\n\
-                 A=M-1\n\
-                 M=D\n",
-                segment.get_index(index)
-            ),
-            SegmentType::Static => format!(
+    pub fn push_instructions(&mut self, segment: Segment, index: u16) -> Result<String> {
+        let asm_command = match segment {
+            Segment::Variable(var_seg) => var_seg.to_asm_push(index),
+            Segment::Fixed(fixed_seg) => fixed_seg.to_asm_push(index),
+            Segment::Static => format!(
                 "@{}.{}\n\
                  D=M\n\
                  @SP\n\
@@ -106,7 +92,7 @@ impl CodeWriter {
                  M=D\n",
                 self.name, index
             ),
-            SegmentType::Constant => format!(
+            Segment::Constant => format!(
                 "@{}\n\
                  D=A\n\
                  @SP\n\
@@ -119,32 +105,11 @@ impl CodeWriter {
         Ok(asm_command)
     }
 
-    pub fn pop_instructions(&mut self, segment_type: SegmentType, index: u16) -> Result<String> {
-        let asm_command = match segment_type {
-            SegmentType::Variable(segment) => format!(
-                "@{}\n\
-                 D=A\n\
-                 @${}\n\
-                 D=D+M\n\
-                 @SP\n\
-                 AM=M-1\n\
-                 D=D+M\n\
-                 A=D-M\n\
-                 M=D-A\n",
-                segment.to_label(),
-                index
-            ),
-            SegmentType::Fixed(segment) => format!(
-                "@{}\n\
-                 D=A\n\
-                 @SP\n\
-                 AM=M-1\n\
-                 D=D+M\n\
-                 A=D-M\n\
-                 M=D-A\n",
-                segment.get_index(index)
-            ),
-            SegmentType::Static => format!(
+    pub fn pop_instructions(&mut self, segment: Segment, index: u16) -> Result<String> {
+        let asm_command = match segment {
+            Segment::Variable(var_seg) => var_seg.to_asm_pop(index),
+            Segment::Fixed(fixed_seg) => fixed_seg.to_asm_pop(index),
+            Segment::Static => format!(
                 "@SP\n\
                  AM=M-1\n\
                  D=M\n\
@@ -152,7 +117,7 @@ impl CodeWriter {
                  M=D\n",
                 self.name, index
             ),
-            _ => String::new(),
+            _ => panic!(),
         };
         Ok(asm_command)
     }
