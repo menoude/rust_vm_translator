@@ -1,5 +1,4 @@
 use crate::*;
-use std::convert::TryFrom;
 use std::string::ToString;
 
 #[derive(Debug)]
@@ -104,9 +103,8 @@ impl FixedSegment {
     }
 }
 
-impl TryFrom<&str> for Segment {
-    type Error = TranslateError;
-    fn try_from(s: &str) -> std::result::Result<Self, Self::Error> {
+impl Segment {
+    pub fn new(s: &str, original_line_nb: u16) -> Result<Self> {
         match s {
             "local" => Ok(Segment::Variable(VariableSegment::Local)),
             "argument" => Ok(Segment::Variable(VariableSegment::Argument)),
@@ -116,7 +114,10 @@ impl TryFrom<&str> for Segment {
             "pointer" => Ok(Segment::Fixed(FixedSegment::Pointer)),
             "static" => Ok(Segment::Static),
             "constant" => Ok(Segment::Constant),
-            _ => Err(TranslateError::Error),
+            _ => Err(TranslateError::IncorrectCommand(
+                s.to_owned(),
+                original_line_nb,
+            )),
         }
     }
 }

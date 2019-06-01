@@ -1,7 +1,5 @@
 use crate::*;
 
-use std::convert::TryFrom;
-use std::convert::TryInto;
 use std::io::Write;
 
 use std::fs::File;
@@ -44,44 +42,9 @@ impl CodeWriter {
 
     pub fn write_arithmetic(&mut self, command: String) -> Result<()> {
         let comment = format!("// {}\n", command);
-        let operation = Operator::try_from(command)?;
-        let asm_command = match operation {
-            Operator::Binary(op) => op.to_asm(),
-            Operator::Unary(op) => op.to_asm(),
-            Operator::Compararison(op) => {
-                let specific = match op {
-                    ComparisonOperator::Eq => "D;JNE\n",
-                    ComparisonOperator::Gt => "D;JLE\n",
-                    ComparisonOperator::Lt => "D;JGE\n",
-                };
-                let false_label = format!("FALSE_{}", self.labels_count);
-                let end_label = format!("END_{}", self.labels_count);
-
-                self.labels_count += 1;
-                format!(
-                    "@SP\n\
-                     M=M-1\n\
-                     A=M\n\
-                     D=M\n\
-                     @SP\n\
-                     A=M-1\n\
-                     D=M-D\n\
-                     M=-1\n\
-                     @{}\n\
-                     {}\n\
-                     {}\n\
-                     0;JMP\n\
-                     {}\n\
-                     @SP\n\
-                     A=M-1\n\
-                     M=0\n\
-                     {}\n",
-                    false_label, specific, end_label, false_label, end_label
-                )
-            }
-        };
+        let asm_command = Operator::new(command, &mut self.labels_count, self.original_line_nb)?.into_asm();
         self.buf.write_all(comment.as_bytes())?;
-        write!(self.buf, "{}", asm_command)?;
+        self.buf.write_all(asm_command.as_bytes())?;
         Ok(())
     }
 
@@ -91,20 +54,14 @@ impl CodeWriter {
         arg_1: &str,
         arg_2: &str,
     ) -> Result<()> {
-        let segment = segments::Segment::try_from(arg_1).or_else(|_| {
-            Err(TranslateError::IncorrectCommand(
-                arg_1.to_owned(),
-                self.original_line_nb,
-            ))
-        })?;
+        let comment = format!("// {} {} {}\n", command, arg_1, arg_2);
+        let segment = segments::Segment::new(arg_1, self.original_line_nb)?;
         let index = u16::from_str(arg_2)?;
-
         let instructions = match command {
             CommandType::Push => self.push_instructions(segment, index)?,
             CommandType::Pop => self.pop_instructions(segment, index)?,
             _ => panic!(),
         };
-        let comment = format!("// {} {} {}\n", command, arg_1, arg_2);
         self.buf.write_all(comment.as_bytes())?;
         self.buf.write_all(instructions.as_bytes())?;
         Ok(())
