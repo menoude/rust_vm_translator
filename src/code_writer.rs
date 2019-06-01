@@ -1,12 +1,13 @@
 use crate::*;
 
 use std::convert::TryFrom;
-use std::fs::File;
+use std::convert::TryInto;
 use std::io::Write;
 
-use std::convert::TryInto;
+use std::fs::File;
 use std::ops::Deref;
 use std::str::FromStr;
+
 pub struct CodeWriter {
     name: String,
     buf: BufWriter<File>,
@@ -42,15 +43,45 @@ impl CodeWriter {
     }
 
     pub fn write_arithmetic(&mut self, command: String) -> Result<()> {
-        let comment = format!("// {}\n", &command);
+        let comment = format!("// {}\n", command);
         let operation = Operator::try_from(command)?;
         let asm_command = match operation {
             Operator::Binary(op) => op.to_asm(),
             Operator::Unary(op) => op.to_asm(),
-            Operator::Compararison(op) => op.to_asm(),
+            Operator::Compararison(op) => {
+                let specific = match op {
+                    ComparisonOperator::Eq => "D;JNE\n",
+                    ComparisonOperator::Gt => "D;JLE\n",
+                    ComparisonOperator::Lt => "D;JGE\n",
+                };
+                let false_label = format!("FALSE_{}", self.labels_count);
+                let end_label = format!("END_{}", self.labels_count);
+
+                self.labels_count += 1;
+                format!(
+                    "@SP\n\
+                     M=M-1\n\
+                     A=M\n\
+                     D=M\n\
+                     @SP\n\
+                     A=M-1\n\
+                     D=M-D\n\
+                     M=-1\n\
+                     @{}\n\
+                     {}\n\
+                     {}\n\
+                     0;JMP\n\
+                     {}\n\
+                     @SP\n\
+                     A=M-1\n\
+                     M=0\n\
+                     {}\n",
+                    false_label, specific, end_label, false_label, end_label
+                )
+            }
         };
         self.buf.write_all(comment.as_bytes())?;
-        writeln!(self.buf, "{}", asm_command)?;
+        write!(self.buf, "{}", asm_command)?;
         Ok(())
     }
 
