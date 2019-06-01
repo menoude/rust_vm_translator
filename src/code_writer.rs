@@ -2,15 +2,16 @@ use crate::*;
 
 use std::io::Write;
 
-use std::fs::File;
+use std::fs;
 use std::ops::Deref;
 use std::str::FromStr;
 
 pub struct CodeWriter {
     name: String,
-    buf: BufWriter<File>,
+    buf: BufWriter<fs::File>,
     labels_count: u32,
     original_line_nb: u16,
+    destination_path: PathBuf,
 }
 
 impl CodeWriter {
@@ -20,14 +21,19 @@ impl CodeWriter {
             file_data.original_path.display(),
             file_data.destination_path.display()
         );
-        let f = File::create(file_data.destination_path.deref())?;
+        let f = fs::File::create(file_data.destination_path.deref())?;
         let code_writer = CodeWriter {
             buf: BufWriter::new(f),
             labels_count: 0,
             name: file_data.destination_name.clone(),
             original_line_nb: 0,
+            destination_path: file_data.destination_path.clone(),
         };
         Ok(code_writer)
+    }
+
+    pub fn remove_file(&self) {
+        fs::remove_file(self.destination_path.clone()).unwrap();
     }
 
     pub fn set_original_line_index(&mut self, index: u16) {

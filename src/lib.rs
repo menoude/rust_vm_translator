@@ -82,12 +82,21 @@ pub fn translate(raw_path: &str) -> Result<()> {
 		let mut parser = Parser::new(&content)?;
 		while parser.advance() {
 			code_writer.set_original_line_index(parser.get_line_index());
-			let command_type = parser.command_type()?;
+			let command_type = parser.command_type().or_else(|e| {
+				code_writer.remove_file();
+				Err(e)
+			})?;
 			match command_type {
-				CommandType::Arithmetic(op) => code_writer.write_arithmetic(op)?,
-				op @ CommandType::Push | op @ CommandType::Pop => {
-					code_writer.write_push_or_pop(op, parser.arg_1()?, parser.arg_2()?)?
-				}
+				CommandType::Arithmetic(op) => code_writer.write_arithmetic(op).or_else(|e| {
+					code_writer.remove_file();
+					Err(e)
+				})?,
+				op @ CommandType::Push | op @ CommandType::Pop => code_writer
+					.write_push_or_pop(op, parser.arg_1()?, parser.arg_2()?)
+					.or_else(|e| {
+						code_writer.remove_file();
+						Err(e)
+					})?,
 				_ => {}
 			}
 		}
