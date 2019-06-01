@@ -4,4 +4,6 @@ Written in Rust
 
 ## Usage
 
-`cargo run <file_name.vm | directory_name>`
+```bash
+cargo run <file_name.vm | directory_name>
+```
