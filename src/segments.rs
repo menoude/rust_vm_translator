@@ -63,8 +63,8 @@ impl VariableSegment {
              D=D+M\n\
              A=D-M\n\
              M=D-A\n",
-            self.to_string(),
-            index
+            index,
+            self.to_string()
         )
     }
 }
