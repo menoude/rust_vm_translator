@@ -42,7 +42,11 @@ impl CodeWriter {
 
     pub fn write_arithmetic(&mut self, command: String) -> Result<()> {
         let comment = format!("// {}\n", command);
-        let asm_command = Operator::new(command, &mut self.labels_count, self.original_line_nb)?.into_asm();
+        let operator = Operator::new(command, self.original_line_nb)?;
+        let asm_command = operator.to_asm(self.labels_count);
+        if let Operator::Comparison(_) = operator {
+            self.labels_count += 1;
+        }
         self.buf.write_all(comment.as_bytes())?;
         self.buf.write_all(asm_command.as_bytes())?;
         Ok(())

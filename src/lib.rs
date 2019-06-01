@@ -4,23 +4,20 @@ use std::ffi::OsStr;
 use std::io::BufWriter;
 use std::path::PathBuf;
 
-pub mod parser;
+
 pub mod code_writer;
-// pub mod constants;
 pub mod commands;
 pub mod error;
 pub mod operations;
+pub mod parser;
 pub mod segments;
 
-
-use parser::*;
 use code_writer::*;
 use commands::*;
 use error::TranslateError;
 use operations::*;
+use parser::*;
 use segments::*;
-
-
 
 type Result<T> = std::result::Result<T, TranslateError>;
 
@@ -39,7 +36,9 @@ fn get_file_data(original_path: PathBuf) -> Result<FileData> {
 		.ok_or_else(|| error::TranslateError::WrongFilePath(destination_path.clone()))?
 		.to_os_string()
 		.into_string()
-		.unwrap();
+		.unwrap()
+		.trim_end_matches(".asm")
+		.to_owned();
 	let data = FileData {
 		destination_name,
 		original_path,
