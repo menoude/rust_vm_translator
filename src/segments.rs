@@ -114,8 +114,8 @@ impl Segment {
             "pointer" => Ok(Segment::Fixed(FixedSegment::Pointer)),
             "static" => Ok(Segment::Static),
             "constant" => Ok(Segment::Constant),
-            _ => Err(TranslateError::IncorrectCommand(
-                s.to_owned(),
+            other => Err(TranslateError::IncorrectCommand(
+                other.to_owned(),
                 original_line_nb,
             )),
         }

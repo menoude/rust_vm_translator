@@ -1,0 +1,3 @@
+when given a directory, all .vm files are turned into one .asm file with the original file name in comment
+add label, goto and if-goto commands
+add function, call, return commands

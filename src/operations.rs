@@ -66,8 +66,8 @@ impl Operator {
 			"and" => Ok(Operator::Binary(BinaryOperator::And)),
 			"or" => Ok(Operator::Binary(BinaryOperator::Or)),
 			"not" => Ok(Operator::Unary(UnaryOperator::Not)),
-			_ => Err(TranslateError::IncorrectCommand(
-				s.to_owned(),
+			other => Err(TranslateError::IncorrectCommand(
+				other.to_owned(),
 				original_line_nb,
 			)),
 		}
